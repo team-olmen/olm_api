@@ -1,0 +1,12 @@
+/phpunit.xml
+/vendor
+/build
+/composer.lock
+
+# vim files
+*.vim
+*.swp
+*.swo
+
+# sass
+.sass-cache

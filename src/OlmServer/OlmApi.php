@@ -121,16 +121,16 @@ class OlmApi {
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 			'username' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß_\.\-]+$/', 'default' => null, 'type' => 'string'),
 			'email' => array('pattern' => '/^[a-zA-Z0-9_\.\-]+@charite\.de$/', 'default' => null, 'type' => 'string'),
-			'password' => array('pattern' => '/^.*+$/', 'default' => null), 'type' => 'string',
+			'password' => array('pattern' => '/^.*+$/', 'default' => null, 'type' => 'string'),
 			'salt' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß_\.\-:]*$/', 'default' => '', 'type' => 'string'),
 			'enabled' => array('pattern' => '/^(0|1)$/', 'default' => 0, 'type' => 'numeric'),
 			'account_non_expired' => array('pattern' => '/^(0|1)$/', 'default' => 1, 'type' => 'numeric'),
 			'credentials_non_expired' => array('pattern' => '/^(0|1)$/', 'default' => 1, 'type' => 'numeric'),
 			'account_non_locked' => array('pattern' => '/^(0|1)$/', 'default' => 1, 'type' => 'numeric'),
-			'roles' => array('pattern' => '/^((ROLE_USER|ROLE_ADMIN),?)+$/', 'default' => 'ROLE_USER', 'type' => 'array')
+			'roles' => array('pattern' => '/^((ROLE_USER|ROLE_ADMIN),?)+$/', 'default' => 'ROLE_USER', 'type' => 'array'),
 		),
 		'mcqs' => array(
-			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null), 'type' => 'numeric',
+			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 			'module' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 			'raw' => array('pattern' => '', 'default' => null, 'type' => 'string'),
 			'rating' => array('pattern' => '/^[0-9]+$/', 'default' => 0, 'type' => 'numeric'),
@@ -602,6 +602,7 @@ class OlmApi {
 		$table = $this->getTableForRoute($route);
 		empty($data) && $data = json_decode($request->getContent(), true);
 		$data = $this->checkData($data, $table, true);
+		//var_dump($data);
 		$this->checkPermissionsRole($request->get("_route"));
 		$this->checkPermissionsOwner($route, $data, $table);
 
@@ -790,7 +791,7 @@ class OlmApi {
 
 		$data = $this->entriesPrepareForClient(array($data), 'users')[0];
 
-		mail($email, '[Olm] PW', "Hallo $entry,\nbitte melde Dich mit: $password an und ändere Dein Passwort!");
+		mail($data['email'], '[Olm] PW', "Hallo " . $data['username'] . ",\nbitte melde Dich mit: $password an und ändere Dein Passwort!");
 		return $this->controllerDefaultPost($request, $data);
 	}
 
@@ -1389,7 +1390,7 @@ class OlmApi {
 			$data['password'] = $this->app['users']->encodePassword($password, empty($entry['salt']) ? null : $entry['salt']);
 			$data['enabled'] = 0;
 
-			mail($email, '[Olm] PW', "Hallo $entry,\nbitte melde Dich mit: $password an und ändere Dein Passwort!");
+			mail($email, '[Olm] PW', "Hallo " . $entry['username'] . ",\nbitte melde Dich mit: $password an und ändere Dein Passwort!");
 
 			$this->entryUpdate($data, 'users', array('id' => $data['id']));
 		}

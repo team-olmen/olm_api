@@ -79,7 +79,7 @@ class OlmApi {
 		'api.generations.patch' => array('route' => '/api/generations/{id}', 'function' => 'controllerDefaultPatch', 'method' => 'patch', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 		'api.generations.delete' => array('route' => '/api/generations/{id}', 'function' => 'controllerDefaultDelete', 'method' => 'delete', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 		// texts
-		'api.texts.get' => array('route' => '/api/texts/{id}', 'function' => 'controllerDefaultGet', 'method' => 'get', 'userrole' => 'ROLE_USER', 'owneronly' => false),
+		'api.texts.get' => array('route' => '/api/texts/{id}', 'function' => 'controllerDefaultGet', 'method' => 'get', 'userrole' => 'anonymous', 'owneronly' => false),
 		'api.texts.post' => array('route' => '/api/texts', 'function' => 'controllerDefaultPost', 'method' => 'post', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 		'api.texts.patch' => array('route' => '/api/texts/{id}', 'function' => 'controllerDefaultPatch', 'method' => 'patch', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 		'api.texts.delete' => array('route' => '/api/texts/{id}', 'function' => 'controllerDefaultDelete', 'method' => 'delete', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),

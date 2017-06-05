@@ -2,7 +2,7 @@
 
 Server for students to create multiple choice questions to test their knowledge of the stuff they learned.
 
-## Firs Steps
+## First Steps
 
 ### 0. Install dependencies
 

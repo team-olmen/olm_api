@@ -538,7 +538,8 @@ class OlmApi {
 		if (!$this->app['security.authorization_checker']->isGranted('ROLE_ADMIN')) {
 			// if the user is not admin
 			// maybe the controller allos anonymous access
-			if ($this->routes[$route]['userrole'] == 'anonymous' && $this->getCurrentUser() === 'anon.') {
+			$user = $this->getCurrentUser();
+			if ($this->routes[$route]['userrole'] == 'anonymous' && $user) {
 				return true;
 			}
 			// check if the user is allowed to access the resource

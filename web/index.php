@@ -98,7 +98,7 @@ $app['security.firewalls'] = array(
 		'anonymous' => true,
 	),
 	'api-llp' => array(
-		'pattern' => '^(\/api\/mcqs\/modules\/|\/api\/modules|\/api\/generations|\/api\/texts/)',
+		'pattern' => '^(\/api\/mcqs\/modules\/[0-9]+|\/api\/modules[^\/]|\/api\/generations|\/api\/texts/)',
 		'methods' => array('GET'),
 		'anonymous' => true,
 	),

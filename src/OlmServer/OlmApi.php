@@ -537,7 +537,7 @@ class OlmApi {
 	private function checkPermissionsRole(string $route) {
 		if (!$this->app['security.authorization_checker']->isGranted('ROLE_ADMIN')) {
 			// if the user is not admin
-			// maybe the controller allos anonymous access
+			// maybe the controller allows anonymous access
 			$user = $this->getCurrentUser();
 			if ($this->routes[$route]['userrole'] == 'anonymous' && $user) {
 				return true;

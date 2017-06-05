@@ -173,7 +173,7 @@ class OlmApi {
 		'texts' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 			'path' => array('pattern' => '/^[a-zA-Z\-_:]+$/', 'default' => null, 'type' => 'string'),
-			'help' => array('pattern' => '', 'default' => null, 'type' => 'string'),
+			'help' => array('pattern' => '', 'default' => '', 'type' => 'string'),
 			'text' => array('pattern' => '', 'default' => null, 'type' => 'string'),
 		)
 	);

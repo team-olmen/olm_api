@@ -1354,20 +1354,20 @@ class OlmApi {
 		$now = new \DateTime('NOW', new \DateTimeZone('UTC'));
 		$data['id'] = $user->getId();
 		//$data['login'] = $now->format('Y-m-d H:i:s');
-		$data['enabled'] = 0;
+		$data['enabled'] = $user->isEnabled() ? 0 : 1;
 		$this->entryUpdate($data, 'users', array('id' => $data['id']), false);
-		$data['enabled'] = 1;
+		$data['enabled'] = $user->isEnabled() ? 1 : 0;
 		$this->entryUpdate($data, 'users', array('id' => $data['id']), false);
 		
 		if (!$this->app['users']->isPasswordValid($password, $user->getPassword())) {
 			$this->sendError(self::RESPONSE_BAD_USERNAME_OR_PASSWORD);
 		} else {
 			$response = [
-				'id' => $user->getId(),
+				'id' => intval($user->getId()),
 				'name' => $user->getUsername(),
-				'admin' => $user->isAdmin(),
+				'admin' => intval($user->isAdmin()),
 				'role' => $user->getRoles(),
-				'enabled' => $user->isEnabled(),
+				'enabled' => intval($user->isEnabled()),
 				'token' => $this->app['security.jwt.encoder']->encode(['name' => $username]),
 			];
 		}

@@ -128,6 +128,7 @@ class OlmApi {
 			'credentials_non_expired' => array('pattern' => '/^(0|1)$/', 'default' => 1, 'type' => 'numeric'),
 			'account_non_locked' => array('pattern' => '/^(0|1)$/', 'default' => 1, 'type' => 'numeric'),
 			'roles' => array('pattern' => '/^((ROLE_USER|ROLE_ADMIN),?)+$/', 'default' => 'ROLE_USER', 'type' => 'array'),
+			'login' => array('pattern' => '/^[0-9 \-:\.]+', 'default' => 'UNSET', 'type' => 'string'),
 		),
 		'mcqs' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
@@ -515,7 +516,7 @@ class OlmApi {
 					$data[$key] = $attributes['default'];
 				}
 
-				if (!isset($data[$key])) {
+				if ($attributs['default'] !== 'UNSET' && !isset($data[$key])) {
 					// the value is still missing so we stop and return an empty array
 					$this->sendError(self::RESPONSE_INVALID_REQUEST);
 				}
@@ -790,6 +791,7 @@ class OlmApi {
 			$data['roles'] = implode(',', $data['roles']);
 		}
 
+		$data['enabled'] = 0; 
 		$data = $this->entriesPrepareForClient(array($data), 'users')[0];
 
 		mail($data['email'], '[Olm] PW', "Hallo " . $data['username'] . ",\nbitte melde Dich mit: $password an und ändere Dein Passwort!");
@@ -839,6 +841,9 @@ class OlmApi {
 		}
 
 		$data['enabled'] = 1;
+		if (isset($data['login'])) {
+			unset($data['login']);
+		}
 		$data = $this->entriesPrepareForClient(array($data), 'users')[0];
 		return $this->controllerDefaultPatch($request, $id, $data);
 	}
@@ -1341,6 +1346,16 @@ class OlmApi {
 			$this->sendError(self::RESPONSE_BAD_USERNAME_OR_PASSWORD);
 		}
 
+		// refresh login
+		// hack way to trigger NOW but it is only one more query for each login
+		$now = new \DateTime('NOW', new \DateTimeZone('UTC'));
+		$data['id'] = $user->getId();
+		//$data['login'] = $now->format('Y-m-d H:i:s');
+		$data['enabled'] = 0;
+		$this->entryUpdate($data, 'users', array('id' => $data['id']), false);
+		$data['enabled'] = 1;
+		$this->entryUpdate($data, 'users', array('id' => $data['id']), false);
+		
 		if (!$this->app['users']->isPasswordValid($password, $user->getPassword())) {
 			$this->sendError(self::RESPONSE_BAD_USERNAME_OR_PASSWORD);
 		} else {
@@ -1393,7 +1408,7 @@ class OlmApi {
 
 			mail($email, '[Olm] PW', "Hallo " . $entry['username'] . ",\nbitte melde Dich mit: $password an und ändere Dein Passwort!");
 
-			$this->entryUpdate($data, 'users', array('id' => $data['id']));
+			$this->entryUpdate($data, 'users', array('id' => $data['id']), false);
 		}
 
 		return $this->app->json(array('Email sent'), 200);

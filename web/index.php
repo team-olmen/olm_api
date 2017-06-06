@@ -97,6 +97,11 @@ $app['security.firewalls'] = array(
 		'methods' => array('POST'),
 		'anonymous' => true,
 	),
+	'maintenance' => array(
+		'pattern' => 'setup|migrate|teapot',
+		'methods' => array('GET'),
+		'anonymous' => true,
+	),
 	'api-llp' => array(
 		'pattern' => '^(\/api\/mcqs\/modules\/[0-9]+|\/api\/modules[^\/]|\/api\/generations|\/api\/texts/)',
 		'methods' => array('GET'),

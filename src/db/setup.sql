@@ -150,6 +150,7 @@ CREATE TABLE `olm_users` (
   `credentials_non_expired` tinyint(1) NOT NULL,
   `account_non_locked` tinyint(1) NOT NULL,
   `roles` varchar(20) COLLATE utf8_bin NOT NULL,
+  `login` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`),
   UNIQUE KEY `email` (`email`)

@@ -1,6 +1,3 @@
-SET NAMES utf8;
-SET time_zone = '+00:00';
-
 DROP TABLE IF EXISTS `olm_exams`;
 CREATE TABLE `olm_exams` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -158,4 +155,4 @@ CREATE TABLE `olm_users` (
 
 INSERT INTO `olm_users` (`id`, `username`, `email`, `password`, `salt`, `enabled`, `account_non_expired`, `credentials_non_expired`, `account_non_locked`, `roles`) VALUES
 (1,	'root',	'root@charite.de',	'$2y$13$iYODQBn6rIBfFZ80qfBTIe6qOagqFTbC0vcnB42fahux/0JIEa1Oe',	'',	1,	1,	1,	1,	'ROLE_ADMIN,ROLE_USER'),
-(6,	'user',	'user@charite.de',	'$2y$13$iYODQBn6rIBfFZ80qfBTIe6qOagqFTbC0vcnB42fahux/0JIEa1Oe',	'',	1,	1,	1,	1,	'ROLE_USER');
+(2,	'user',	'user@charite.de',	'$2y$13$iYODQBn6rIBfFZ80qfBTIe6qOagqFTbC0vcnB42fahux/0JIEa1Oe',	'',	1,	1,	1,	1,	'ROLE_USER');

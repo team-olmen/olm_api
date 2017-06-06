@@ -36,9 +36,11 @@ class OlmApi {
 		//
 		'api.login' => array('route' => '/api/login', 'function' => 'controllerLogin', 'method' => 'post', 'userrole' => '', 'owneronly' => false),
 		'api.password.reset' => array('route' => '/api/password/reset', 'function' => 'controllerResetPassword', 'method' => 'post', 'userrole' => '', 'owneronly' => false),
-		'api.migrate.olm4' => array('route' => '/api/migrate/olm4', 'function' => 'controllerMigrateOlm4', 'method' => 'get', 'userrole' => '', 'owneronly' => false),
+		'api.setup' => array('route' => '/api/setup', 'function' => 'controllerSetup', 'method' => 'get', 'userrole' => '', 'owneronly' => false),
+		'api.migrate.mcqs' => array('route' => '/api/migrate/mcqs', 'function' => 'controllerMigrateMcqs', 'method' => 'get', 'userrole' => '', 'owneronly' => false),
+		'api.migrate.users' => array('route' => '/api/migrate/users', 'function' => 'controllerMigrateUsers', 'method' => 'get', 'userrole' => '', 'owneronly' => false),
 		'api.test' => array('route' => '/api/test', 'function' => 'controllerTest', 'method' => 'get', 'userrole' => 'ROLE_USER', 'owneronly' => false),
-		'api.teapot' => array('route' => '/api/teapot', 'function' => 'controllerTeapot', 'method' => 'get', 'userrole' => 'ROLE_USER', 'owneronly' => false),
+		'api.teapot' => array('route' => '/api/teapot', 'function' => 'controllerTeapot', 'method' => 'get', 'userrole' => '', 'owneronly' => false),
 		//
 		// default controllers
 		//
@@ -187,6 +189,7 @@ class OlmApi {
 	);
 
 	const RESPONSE_INVALID_REQUEST = array(400, 'Invalid request');
+	const RESPONSE_STUPID_REQUEST = array(400, 'Stupid request');
 	const RESPONSE_TOO_MANY_MODULES = array(400, 'Too many modules');
 	const RESPONSE_NO_QUESTIONS = array(400, 'No questions');
 	const RESPONSE_INSUFFICIENT_PERMISSIONS = array(403, 'Insufficient permissions');
@@ -1422,7 +1425,54 @@ class OlmApi {
 		return $this->app->json(array('message' => 'I can\'t answer your request - I\'m a happy teapot! :)'), 419);
 	}
 
-	public function controllerMigrateOlm4(\Symfony\Component\HttpFoundation\Request $request) {
+	private function checkTableExists($table) {
+		// check if the tables exist
+		$sql = "SHOW TABLES LIKE '" . $table . "'";
+		$stmt = $this->connection->prepare($sql);
+		$stmt->execute();
+		$result = $stmt->fetchAll();
+		if(!empty($result)) {
+			$this->sendError(self::RESPONSE_STUPID_REQUEST);
+		}
+	}
+
+	private function runSqlScript($file) {
+		$log = array();
+
+		$fh = fopen($file,"r");
+		$content = fread($fh, filesize($file));
+		$queries = explode(';', $content);
+
+		foreach ($queries as $query) {
+			if (empty(trim($query))) {
+				continue;
+			}
+			$stmt = $this->connection->prepare($query);
+			$stmt->execute();
+			$log[] = array(
+				'query' => $query,
+			);
+		}
+
+		return $log;
+	}
+
+	public function controllerSetup(\Symfony\Component\HttpFoundation\Request $request) {
+		$this->checkTableExists('olm_users');
+		$result = $this->runSqlScript('../src/db/setup.sql');
+		return $this->app->json($result, 200);
+	}
+
+	public function controllerMigrateUsers(\Symfony\Component\HttpFoundation\Request $request) {
+		$this->checkTableExists('tmp_users');
+		$result = $this->runSqlScript('../src/db/migrate_users.sql');
+		return $this->app->json($result, 200);
+	}
+
+	public function controllerMigrateMcqs(\Symfony\Component\HttpFoundation\Request $request) {
+		$this->checkTableExists('tmp_module');
+		$result = $this->runSqlScript('../src/db/migrate_mcqs.sql');
+		
 		$entries = $this->connection->fetchAll('SELECT * FROM tmp_mcq');
 		$done = array();
 		foreach ($entries as $entry) {
@@ -1436,32 +1486,32 @@ class OlmApi {
 			}
 
 			$data['question'] = html_entity_decode($entry['q'], ENT_COMPAT | ENT_HTML5, 'UTF-8');
-			
+
 			$first = substr(trim($data['question']), 0, 1);
 			if ($first == '-' || $first == '*') {
 				$data['question'] = substr(trim($data['question']), 1);
 			}
-			
+
 			$data['solution'] = $entry['s'] - 1;
-			
+
 			if ($data['solution'] > count($data['answers']) - 1) {
 				$data['answers'][] = 'Es wurde noch keine Antwort als richtig markiert';
 				$data['solution'] = count($data['answers']) - 1;
 			}
-			
+
 			$entry['raw'] = $this->mcqStringFromParsed($data);
-			
+
 			unset($entry['q']);
 			unset($entry['s']);
 			unset($entry['version']);
-			
+
 			$entry = $this->mcqsPrepareForDb(array($entry))[0];
-			
+
 			$entry['rating'] = 0;
 			$entry['discussion'] = '';
-			
+
 			$ok = ($this->entryCreate($entry, 'mcqs', true) > -1);
-			
+
 			$done[] = array('id' => $entry['id'], 'done' => $ok);
 		}
 

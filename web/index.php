@@ -69,14 +69,6 @@ $app->error(function(OlmServer\ApiException $error) use ($app) {
 });
 
 
-$app->options("{anything}", function (Application $app) {
-	//return new \Symfony\Component\HttpFoundation\JsonResponse(null, 204);
-	return $app->json(array('message' => 'Of course, that\'s ok!'), 200);
-})->assert("anything", ".*");
-
-$app->match("{url}", function($url) use ($app) { return "OK"; })->assert('url', '.*')->method("OPTIONS");
-
-
 $app['users'] = function() use ($app, $prefix) {
 	return new OlmServer\UserManager($app['db'], $app['security.default_encoder'], $prefix);
 };
@@ -108,7 +100,7 @@ $app['security.firewalls'] = array(
 		'anonymous' => true,
 	),
 	'secured' => array(
-		'pattern' => '^.*$',
+		'pattern' => '^\/api\/.+$',
 		'methods' => array('GET', 'POST', 'PATCH', 'DELETE'),
 		'logout' => array('logout_path' => '/logout'),
 		'users' => $app['users'],
@@ -140,4 +132,20 @@ foreach($app['olmapi']->getRoutes() as $name => $route) {
 		$app->post($route['route'], 'olmapi:' . $route['function'])->bind($name);
 	}
 }
+
+$app->options("{anything}", function (Application $app) {
+	//return new \Symfony\Component\HttpFoundation\JsonResponse(null, 204);
+	return $app->json(array('message' => 'Of course, that\'s ok!'), 200);
+})->assert("anything", ".*");
+
+$app->match("{start}", function (Application $app) {
+	return $app['olmapi']->controllerInfo();
+})->assert("start", "\/?([^\/]*|api|api\/)")->method('GET');
+
+$app->match("{anything}", function (Application $app) {
+	return $app['olmapi']->controllerNotDefined();
+})->assert("anything", ".*");
+
+//$app->match("{url}", function($url) use ($app) { return "OK"; })->assert('url', '.*')->method("OPTIONS");
+
 $app->run();

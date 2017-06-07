@@ -188,6 +188,7 @@ class OlmApi {
 		'protocolls'
 	);
 
+	const RESPONSE_ROUTE_NOT_DEFINED = array(404, 'Route not defined');
 	const RESPONSE_INVALID_REQUEST = array(400, 'Invalid request');
 	const RESPONSE_STUPID_REQUEST = array(400, 'Stupid request');
 	const RESPONSE_TOO_MANY_MODULES = array(400, 'Too many modules');
@@ -1333,6 +1334,15 @@ class OlmApi {
 	/*
 	 * Controllers for other api-related stuff.
 	 */
+
+	public function controllerInfo() {
+		return file_get_contents(__DIR__ . '/info.html');
+	}
+
+	public function controllerNotDefined() {
+		$this->sendError(self::RESPONSE_ROUTE_NOT_DEFINED);
+	}
+
 
 	public function controllerLogin(\Symfony\Component\HttpFoundation\Request $request) {
 		$vars = json_decode($request->getContent(), true);

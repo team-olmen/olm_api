@@ -44,8 +44,6 @@ class OlmApi {
 		//
 		// default controllers
 		//
-		// users
-		'api.users.delete' => array('route' => '/api/users/{id}', 'function' => 'controllerDefaultDelete', 'method' => 'delete', 'userrole' => 'ROLE_USER', 'owneronly' => true),
 		// mcqs
 		'api.mcqs.gethistory' => array('route' => '/api/mcqs/history/{id}', 'function' => 'controllerDefaultGetHistory', 'method' => 'get', 'userrole' => 'ROLE_USER', 'owneronly' => false),
 		'api.mcqs.getdeleted' => array('route' => '/api/mcqs/deleted', 'function' => 'controllerDefaultGetDeleted', 'method' => 'get', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
@@ -89,10 +87,16 @@ class OlmApi {
 		// custom controllers
 		//
 		// users
+		'api.users.getinactive' => array('route' => '/api/users/inactive', 'function' => 'controllerUsersGetInactive', 'method' => 'get', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 		'api.users.get' => array('route' => '/api/users/{id}', 'function' => 'controllerUsersGet', 'method' => 'get', 'userrole' => 'ROLE_USER', 'owneronly' => true),
+		'api.users.getname' => array('route' => '/api/users/name/{name}', 'function' => 'controllerUsersGetName', 'method' => 'get', 'userrole' => 'ROLE_ADMIN', 'owneronly' => true),
+		'api.users.getmulti' => array('route' => '/api/users', 'function' => 'controllerUsersGetMulti', 'method' => 'get', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 		'api.users.getmulti' => array('route' => '/api/users', 'function' => 'controllerUsersGetMulti', 'method' => 'get', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 		'api.users.post' => array('route' => '/api/users', 'function' => 'controllerUsersPost', 'method' => 'post', 'userrole' => 'ROLE_USER', 'owneronly' => true),
 		'api.users.patch' => array('route' => '/api/users/{id}', 'function' => 'controllerUsersPatch', 'method' => 'patch', 'userrole' => 'ROLE_USER', 'owneronly' => true),
+		'api.users.deleteinactive' => array('route' => '/api/users/inactive', 'function' => 'controllerUsersDeleteInactive', 'method' => 'delete', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
+		// users - default controller but has to be added after /api/users/inactive
+		'api.users.delete' => array('route' => '/api/users/{id}', 'function' => 'controllerDefaultDelete', 'method' => 'delete', 'userrole' => 'ROLE_USER', 'owneronly' => true),
 		// mcqs
 		'api.mcqs.get' => array('route' => '/api/mcqs/{id}', 'function' => 'controllerMcqsGet', 'method' => 'get', 'userrole' => 'ROLE_USER', 'owneronly' => false),
 		'api.mcqs.getversion' => array('route' => '/api/mcqs/{id}/version/{version}', 'function' => 'controllerMcqsGet', 'method' => 'get', 'userrole' => 'ROLE_USER', 'owneronly' => false),
@@ -121,10 +125,10 @@ class OlmApi {
 	private $models = array(
 		'users' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
-			'username' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß_\.\-]+$/', 'default' => null, 'type' => 'string'),
+			'username' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß_\.\-,]+$/', 'default' => null, 'type' => 'string'),
 			'email' => array('pattern' => '/^[a-zA-Z0-9_\.\-]+@charite\.de$/', 'default' => null, 'type' => 'string'),
 			'password' => array('pattern' => '/^.*+$/', 'default' => null, 'type' => 'string'),
-			'salt' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß_\.\-:]*$/', 'default' => '', 'type' => 'string'),
+			'salt' => array('pattern' => '', 'default' => '', 'type' => 'string'),
 			'enabled' => array('pattern' => '/^(0|1)$/', 'default' => 0, 'type' => 'numeric'),
 			'account_non_expired' => array('pattern' => '/^(0|1)$/', 'default' => 1, 'type' => 'numeric'),
 			'credentials_non_expired' => array('pattern' => '/^(0|1)$/', 'default' => 1, 'type' => 'numeric'),
@@ -144,13 +148,13 @@ class OlmApi {
 		),
 		'modules' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
-			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,]+$/', 'default' => null, 'type' => 'string'),
-			'code' => array('pattern' => '/^(M|S)[0-9]{1,9}$/', 'default' => null, 'type' => 'string'),
+			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.]+$/', 'default' => null, 'type' => 'string'),
+			'code' => array('pattern' => '/^[A-Z][0-9]{1,9}$/', 'default' => null, 'type' => 'string'),
 		),
 		'sessions' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 			'user' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'string'),
-			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,]+$/', 'default' => null, 'type' => 'string'),
+			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.]+$/', 'default' => null, 'type' => 'string'),
 			'questions' => array('pattern' => '/^([0-9]+;)+[0-9]+$/', 'default' => null, 'type' => 'array'),
 			'status' => array('pattern' => '/^([0-9]+;)+[0-9]+$/', 'default' => null, 'type' => 'array'),
 			'answers' => array('pattern' => '/^([0-9]+;)+[0-9]+$/', 'default' => null, 'type' => 'array'),	
@@ -161,17 +165,17 @@ class OlmApi {
 		),
 		'exams' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
-			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,]+$/', 'default' => null, 'type' => 'string'),
+			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.]+$/', 'default' => null, 'type' => 'string'),
 		),
 		'protocolls' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 			'exam' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
-			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,]+$/', 'default' => null, 'type' => 'string'),
+			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.]+$/', 'default' => null, 'type' => 'string'),
 			'text' => array('pattern' => '', 'default' => null, 'type' => 'string'),
 		),
 		'generations' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
-			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,]+$/', 'default' => null, 'type' => 'string'),
+			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.]+$/', 'default' => null, 'type' => 'string'),
 		),
 		'texts' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
@@ -192,6 +196,7 @@ class OlmApi {
 	const RESPONSE_INVALID_REQUEST = array(400, 'Invalid request');
 	const RESPONSE_STUPID_REQUEST = array(400, 'Stupid request');
 	const RESPONSE_TOO_MANY_MODULES = array(400, 'Too many modules');
+	const RESPONSE_TERM_TOO_SHORT = array(400, 'Term too short');
 	const RESPONSE_NO_QUESTIONS = array(400, 'No questions');
 	const RESPONSE_INSUFFICIENT_PERMISSIONS = array(403, 'Insufficient permissions');
 	const RESPONSE_ITEM_EXISTS = array(409, 'Item exists');
@@ -745,6 +750,54 @@ class OlmApi {
 		return $this->app->json($entry, 200);
 	}
 
+	public function controllerUsersGetName(\Symfony\Component\HttpFoundation\Request $request, string $name) {
+		if (strlen($name) <= 3) {
+			$this->sendError(self::RESPONSE_TERM_TOO_SHORT);
+		}
+		$this->checkPermissionsRole($request->get("_route"));
+		$filter = array();
+		$filter[] = $name . '%';
+
+		$entries = $this->connection->fetchAll(
+			'SELECT * FROM ' . $this->prefix . 'users WHERE username LIKE ?',
+			$filter
+		);
+
+		$entries = $this->entriesPrepareForClient($entries, 'users');
+		return $this->app->json($entries, 200);
+	}
+
+	public function controllerUsersGetInactive(\Symfony\Component\HttpFoundation\Request $request) {
+		$this->checkPermissionsRole($request->get("_route"));
+		$filter = array();
+		$date = strtotime('-1 year');
+		$filter[] = date('Y-m-d H:i:s', $date);
+
+		$entries = $this->connection->fetchAll(
+			'SELECT * FROM ' . $this->prefix . 'users WHERE login < ?',
+			$filter
+		);
+
+		$entries = $this->entriesPrepareForClient($entries, 'users');
+		return $this->app->json($entries, 200);
+	}
+
+	public function controllerUsersDeleteInactive(\Symfony\Component\HttpFoundation\Request $request) {
+		$this->checkPermissionsRole($request->get("_route"));
+		$filter = array();
+		$date = strtotime('-1 year');
+		$filter[] = date('Y-m-d H:i:s', $date);
+
+		$stmt = $this->connection->createQueryBuilder();
+		$stmt
+			->delete($query)
+			->from($this->prefix . 'users')
+			->where('login < ?')
+			->setParameter(0, $date);
+		$affectedRows = $stmt->execute();
+
+		return $this->app->json(array('deleted' => $affectedRows), 200);
+	}
 
 	public function controllerUsersGetMulti(\Symfony\Component\HttpFoundation\Request $request) {
 		$this->checkPermissionsRole($request->get("_route"));

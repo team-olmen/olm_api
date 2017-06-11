@@ -4,14 +4,17 @@ Server component of a suite for students to create multiple-choice questions to 
 
 ## Features
 
-A CRUD API which allows:
+A PHP-based CRUD API. You can:
 
-* creating and maintaining of an arbitray number of collections of  multiple-choice questions
-* filtering of collections
-* creating and maintnaining individual test sessions for each user
-* markdown / flatfile based note collections to share experiences / tips between users
-* creating and maintaing of users (incl. password reset)
-* ...
+* add / modify / delete / undelete / reset `modules` - a collection of multiple-choice questions
+* add / modify / delete / undelete / reset `mcqs` - the multiple-choice questions
+* add / modify / delete `sessions` - test your knowledge against an individual collection of `mcqs`
+* invite / modify / manage / delete `users`
+* supports a simple hierarchy consisting of admins and users
+* add / modify / delete `exams` - arbitrary collection of notes
+* add / modify / delete `protocolls` - arbitrary flatfile / markdown-based notes for `exams` to share impressions, tips and help
+
+*reset* means that old revisions of those items are kept by the server so one can go back and restore an arbitrary version
 
 ## First Steps
 
@@ -67,6 +70,6 @@ PATCH version when you make backwards-compatible bug fixes.
 
 To mark pre-releases you may add:
 
-* `-rc[0-9]*` for release-candidates
-* `-beta[0-9]*` for beta-releases
-* `-alpha[0-9]*` for alpha-releases
+* `-rc.[0-9]*` for release-candidates
+* `-beta.[0-9]*` for beta-releases
+* `-alpha.[0-9]*` for alpha-releases

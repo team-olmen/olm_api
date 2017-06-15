@@ -33,7 +33,7 @@ INSERT INTO `olm_users` (
  SELECT
   `email`,
   `email`,
-  '$2y$13$iYODQBn6rIBfFZ80qfBTIe6qOagqFTbC0vcnB42fahux/0JIEa1Oe',
+  '$2y$13$Aam4QRvA.6Iz8F5RZclXaupL0I91tRmURUMEUUUX8fvQBbZFofdqa',
   '',
   0,
   1,

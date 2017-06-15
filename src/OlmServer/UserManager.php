@@ -45,7 +45,7 @@ class UserManager implements UserProviderInterface {
 	}
 
 	public function loadUserByUsername($username) {
-		$stmt = $this->connection->executeQuery('SELECT * FROM ' . $this->prefix . 'users WHERE username = ?', array(strtolower($username)));
+		$stmt = $this->connection->executeQuery('SELECT * FROM ' . $this->prefix . 'users WHERE username = ?', array($username));
 
 		if (!$data = $stmt->fetch()) {
 			return null;//throw new UsernameNotFoundException(sprintf('Username "%s" does not exist.', $username));

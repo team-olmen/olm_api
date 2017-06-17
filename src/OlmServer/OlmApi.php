@@ -1293,8 +1293,22 @@ class OlmApi {
 		$data['enabled'] = 0; 
 		$data = $this->entriesPrepareForClient(array($data), 'users')[0];
 
+
+		$table = 'users';
+		$data = $this->checkData($data, $table, true);
+		$this->checkPermissionsRole($request->get("_route"));
+
+		$id = $this->entryCreate($data, $table);
+
+		if ($id === -1) {
+			$this->sendError(self::RESPONSE_ITEM_EXISTS);
+		}
+
 		mail($data['email'], '[Olm] PW', "Hallo " . $data['username'] . ",\nbitte melde Dich mit: $password an und ändere Dein Passwort!");
-		return $this->controllerDefaultPost($request, $data);
+		$entry = $this->entryFetchById($id, $table);
+		$entry = $this->entriesPrepareForClient(array($entry), $table)[0];
+
+		return $this->app->json($entry, 201);
 	}
 
 	public function controllerUsersPatch(\Symfony\Component\HttpFoundation\Request $request, string $id) {

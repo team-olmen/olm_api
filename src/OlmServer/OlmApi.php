@@ -1,34 +1,64 @@
 <?php
+/**
+ * Behold the API of Olm.
+ *
+ * @license MIT
+ * @since 1.0.0-rc.1
+ */
+
+/**
+ * The namespace....
+ *
+ */
 namespace OlmServer;
 
 /**
+ * This class represents the whole API.
+ * 
+ * This class hold all controllers and their private functions.
+ *
+ * For the sake of simplicity it has not been split up into different files.
+ *
+ * @since 1.0.0-rc.1
  */
 class OlmApi {
 	/**
-	 * The app.
-	 *
-	 * @var \Silex\Application
+	 * @var \Silex\Application $app Silex application-object to interact with the framework
+	 * @since 1.0.0-rc.1
 	 */
 	private $app;
 
 	/**
-	 * Connection to the database.
-	 *
-	 * @var \Doctrine\DBAL\Connection
+	 * @var \Doctrine\DBAL\Connection $connection DBAL object to run queries etc
+	 * @since 1.0.0-rc.1
 	 */
 	private $connection;
 
 	/**
-	 * String to prefix database tablenames with.
-	 *
-	 * @var string
+	 * @var string $prefix string to prefix database tablenames with
+	 * @since 1.0.0-rc.1
 	 */
 	private $prefix;
 
 	/**
 	 * The routes served by the API.
 	 *
-	 * @var array
+	 * Structure:
+	 * <code>
+	 * array(
+	 * 	'ROUTENAME' => array(
+	 * 		'route' => string: the route to respond to
+	 * 		'function' => string: the controller that's to be bound to that route
+	 * 		'method' => string: the HTML method to respond to
+	 * 		'userrole' => string: the role the user needs in order to execute the controller successfully (ROLE_USER|ROLE_ADMIN)
+	 * 		'owneronly' => bool: if true the user may proceed if he or she is the owner of the item or has ROLE_ADMIN
+	 * 	)
+	 * )
+	 * </code>
+	 * @var array $routes
+	 * @see OlmApi::getRoutes();
+	 * @see OlmApi::getTableForRoute();
+	 * @since 1.0.0-rc.1
 	 */
 	private $routes = array(
 		//
@@ -122,6 +152,26 @@ class OlmApi {
 		'api.texts.getbypath' => array('route' => '/api/texts/path/{path}', 'function' => 'controllerTextsGetByPath', 'method' => 'get', 'userrole' => 'anonymous', 'owneronly' => false),
 	);
 
+	/**
+	 * The models accepted / returned by the API.
+	 *
+	 * Structure:
+	 * <code>
+	 * array(
+	 * 	'TABLE_NAME_WITHOUT_PREFIX' => array(
+	 * 		'FIELD_NAME => array(
+	 * 			'pattern' => string: preg_match() compatible pattern; if empty no matching is done 
+	 * 			'default' => string: a default value for that field; set to null if you don't want to specify a default value
+	 * 			'type' => string: the type of variable which is returned (string|numeric|array)
+	 * 		)
+	 * 	)
+	 * )
+	 * </code>
+	 * @var array $models
+	 * @see OlmApi::entriesPrepareForClient()
+	 * @see OlmApi::checkData()
+	 * @since 1.0.0-rc.1
+	 */
 	private $models = array(
 		'users' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
@@ -185,6 +235,11 @@ class OlmApi {
 		)
 	);
 
+	/**
+	 * @var array $versionedTables tables that support versioning / history of items
+	 * @see OlmApi::entrySaveHistory()
+	 * @since 1.0.0-rc.1
+	 */
 	private $versionedTables = array(
 		'mcqs',
 		'exams',
@@ -192,33 +247,140 @@ class OlmApi {
 		'protocolls'
 	);
 
+	/**
+	 * @var array RESPONSE_ROUTE_NOT_DEFINED will give you "404 Route not defined"
+	 * @var array will give you "404 Route not defined"
+	 * @const array RESPONSE_ROUTE_NOT_DEFINED will give you "404 Route not defined"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_ROUTE_NOT_DEFINED = array(404, 'Route not defined');
+
+	/**
+	 * Will give you "400 Invalid request".
+	 * @var array RESPONSE_INVALID_REQUEST will give you "400 Invalid request"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_INVALID_REQUEST = array(400, 'Invalid request');
+
+	/**
+	 * @var array RESPONSE_STUPID_REQUEST will give you "400 Stupid request"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_STUPID_REQUEST = array(400, 'Stupid request');
+
+	/**
+	 * @var array RESPONSE_TOO_MANY_MODULES will give you "400 Too many modules"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_TOO_MANY_MODULES = array(400, 'Too many modules');
+
+	/**
+	 * @var array RESPONSE_TERM_TOO_SHORT will give you "400 Term too short"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_TERM_TOO_SHORT = array(400, 'Term too short');
-	const RESPONSE_NO_QUESTIONS = array(400, 'No questions');
+
+	/**
+	 * @var array RESPONSE_INSUFFICIENT_PERMISSIONS will give you "403 Insufficient permissions"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_INSUFFICIENT_PERMISSIONS = array(403, 'Insufficient permissions');
+
+	/**
+	 * @var array RESPONSE_ITEM_EXISTS will give you "409 Item exists"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_ITEM_EXISTS = array(409, 'Item exists');
+
+	/**
+	 * @var array RESPONSE_ITEM_NOT_CHANGED will give you "404 Item not changed"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_ITEM_NOT_CHANGED = array(404, 'Item not changed');
+
+	/**
+	 * @var array RESPONSE_PASSWORDS_DO_NOT_MATCH will give you "400 Passwords do no match"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_PASSWORDS_DO_NOT_MATCH = array(400, 'Passwords do not match');
+
+	/**
+	 * @var array RESPONSE_PASSWORD_MISSING will give you "400 Password missing"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_PASSWORD_MISSING = array(400, 'Password missing');
+
+	/**
+	 * @var array RESPONSE_USERNAME_EXISTS will give you "409 Username exists"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_USERNAME_EXISTS = array(409, 'Username exists');
+
+	/**
+	 * @var array RESPONSE_EMAIL_EXISTS will give you "409 Email exists"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_EMAIL_EXISTS = array(409, 'Email exists');
+
+	/**
+	 * @var array RESPONSE_WRONG_PASSWORD will give you "403 Wrong password"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_WRONG_PASSWORD = array(403, 'Wrong password');
+
+	/**
+	 * @var array RESPONSE_ITEM_NOT_FOUND will give you "409 Item not found"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_ITEM_NOT_FOUND = array(409, 'Item not found');
+
+	/**
+	 * @var array RESPONSE_MCQ_NO_QUESTION will give you "400 Question missing"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_MCQ_NO_QUESTION = array(400, 'Question missing');
+
+	/**
+	 * @var array RESPONSE_MCQ_NO_ANSWERS will give you "400 Answers missing"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_MCQ_NO_ANSWERS = array(400, 'Answers missing');
+
+	/**
+	 * @var array RESPONSE_MCQ_NO_SOLUTION will give you "400 Solution missing"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_MCQ_NO_SOLUTION = array(400, 'Solution missing');
+
+	/**
+	 * @var array RESPONSE_NO_QUESTIONS will give you "400 No questions"
+	 * @since 1.0.0-rc.1
+	 */
+	const RESPONSE_NO_QUESTIONS = array(400, 'No questions');
+
+	/**
+	 * @var array RESPONSE_MISSING_USERNAME_OR_PASSWORD will give you "400 Missing username or password"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_MISSING_USERNAME_OR_PASSWORD = array(400, 'Missing username or password');
+
+	/**
+	 * @var array RESPONSE_BAD_USERNAME_OR_PASSWORD will give you "403 Bad username or password"
+	 * @since 1.0.0-rc.1
+	 */
 	const RESPONSE_BAD_USERNAME_OR_PASSWORD = array(403, 'Bad username or password');
 
 	/**
 	 * Constructor.
 	 *
+	 * @uses OlmApi::$connection
+	 * @uses OlmApi::$app
+	 * @uses OlmApi::$prefix
 	 * @param Doctrine\DBAL\Connection $connection connection to the database
+	 * @param Silex\Application $app silex-app-object
 	 * @param string $prefix a string to prefix the tablenames in the database with
 	 * @return void
+	 * @since 1.0.0-rc.1
 	 */
 	public function __construct(\Doctrine\DBAL\Connection $connection, \Silex\Application $app, string $prefix) {
 		$this->connection = $connection;
@@ -226,15 +388,39 @@ class OlmApi {
 		$this->prefix = $prefix;
 	}
 
+	/**
+	 * Retrieve routes to add them to silex.
+	 *
+	 * @uses OlmApi::$routes
+	 * @param void
+	 * @return array
+	 * @since 1.0.0-rc.1
+	 */
 	public function getRoutes() {
 		return $this->routes;
 	}
 
+	/**
+	 * Aborts execution and sends an error.
+	 *
+	 * @throws ApiException
+	 * @param array the return code and message
+	 * @return void
+	 * @since 1.0.0-rc.1
+	 */
 	private function sendError(array $return) {
 		list($code, $message) = $return;
 		throw new ApiException($message, $code);
 	}
 
+	/**
+	 * Returns the current user's id or -1 for anonymous user or if no user is logged in.
+	 *
+	 * @uses OlmApi::$app
+	 * @param void
+	 * @return int
+	 * @since 1.0.0-rc.1
+	 */
 	public function getCurrentUserId() {
 		$token = $this->app['security.token_storage']->getToken();
 		if ($token === null) {
@@ -247,11 +433,31 @@ class OlmApi {
 		return $user->getId();
 	}
 
+	/**
+	 * Returns the current user.
+	 *
+	 * @uses OlmApi::$app
+	 * @param void
+	 * @return User|null
+	 * @since 1.0.0-rc.1
+	 */
 	public function getCurrentUser() {
 		$token = $this->app['security.token_storage']->getToken();
 		return ($token !== null) ? $token->getUser() : null;
 	}
 
+	/**
+	 * Checks if a db entry belongs to the user.
+	 *
+	 * This is always true if the current user has "ROLE_ADMIN".
+	 * Only works for entries from tables with a "user" field and from the "users" table.
+	 *
+	 * @uses OlmApi::getCurrentUser()
+	 * @uses OlmApi::entryFetchById()
+	 * @param void
+	 * @return bool
+	 * @since 1.0.0-rc.1
+	 */
 	private function entryIsOwn(array $data, string $table, int $currentUserId) {
 		if ($this->getCurrentUser()->isAdmin()) {
 			return true;
@@ -274,10 +480,12 @@ class OlmApi {
 	/**
 	 * Fetch a given entry from the database.
 	 *
-	 * For GET.
+	 * @uses OlmApi::connection
+	 * @uses OlmApi::$prefix
 	 * @param array $conditions like array('username' => 'SOMENAME')
 	 * @param string $table the name of the table to operate on (without prefix)
 	 * @return array the entry
+	 * @since 1.0.0-rc.1
 	 */
 	private function entryFetch(array $conditions, string $table) {
 		$where = '';
@@ -296,21 +504,50 @@ class OlmApi {
 	}
 
 	/**
-	 * Fetch a given entry from the database.
+	 * Fetch an entry with the given id from the database.
 	 *
-	 * For GET.
+	 * Convenience function.
+	 * @uses OlmApi::entryFetch
 	 * @param string $id the id
 	 * @param string $table the name of the table to operate on (without prefix)
 	 * @return array the entry
+	 * @since 1.0.0-rc.1
 	 */
 	private function entryFetchById(string $id, string $table) {
-		$entry = $this->connection->fetchAssoc(
-			'SELECT * FROM ' . $this->prefix . $table . ' WHERE id = ? LIMIT 1',
-			array($id));
-
-		return $entry ? : array();
+		return $this->entryFetch(array('id' => $id), $table);
 	}
 
+	/**
+	 * Saves a history entry for the entry with the given id.
+	 *
+	 * OlmApi allows keeping an entry's history through TABLENAME_history tables.
+	 * Such a history table has the same structure as the table (with name TABLENAME) that
+	 * is used to store the current version of an entry. But history tables have three
+	 * additional fields:
+	 *
+	 * - history_user: int the id of the user who made the change
+	 * - history_timestamp: time of insertion
+	 * - history_status: one of:
+	 *    - created: the entry has been created 
+	 *    - updated: the entry was changed
+	 *    - deleted: the entry has been deleted and currently there is no entry in TABLENAME
+	 *    - deletioncancelled: the entry has been deleted and was restored
+	 *
+	 * The entry id and history_timestamp form the primary index of such a table.
+	 *
+	 * This function will fetch the entry from the given table and insert the data into
+	 * TABLENAME_history along with the id of the current user and the status change.
+	 * @uses OlmApi::versionedTables
+	 * @uses OlmApi::entryFetchById()
+	 * @uses OlmApi::getCurrentUserId()
+	 * @uses OlmApi::$prefix
+	 * @uses OlmApi::$connection
+	 * @param int $id the id
+	 * @param string $table the name of the table to operate on (without prefix)
+	 * @param string $action one of (created|updated|deleted)
+	 * @return bool true on success
+	 * @since 1.0.0-rc.1
+	 */
 	private function entrySaveHistory(int $id, string $table, string $action) {
 		if (!in_array($table, $this->versionedTables)) {
 			// do not version entries
@@ -335,13 +572,16 @@ class OlmApi {
 	}
 
 	/**
-	 * Insert a given entry in the database.
+	 * Insert a given entry into the database.
 	 *
-	 * For POST.
+	 * @uses OlmApi::entrySaveHistory()
+	 * @uses OlmApi::$prefix
+	 * @uses OlmApi::$connection
 	 * @param array $data the data, needs to contain the id
 	 * @param string $table the name of the table to operate on (without prefix)
-	 * @param boolen $history create an entry in the _history table
-	 * @return integer the new id, -1 on error
+	 * @param bool $history create an entry in the _history table
+	 * @return int the new id, -1 on error
+	 * @since 1.0.0-rc.1
 	 */
 	private function entryCreate(array $data, string $table, bool $history = true) {
 		$affectedRows = $this->connection->insert(
@@ -362,12 +602,15 @@ class OlmApi {
 	/**
 	 * Update a given entry in the database.
 	 *
-	 * For PUT or PATCH.
+	 * @uses OlmApi::entrySaveHistory()
+	 * @uses OlmApi::$connection
+	 * @uses OlmApi::$prefix
 	 * @param array $data the data, needs to contain the id
 	 * @param string $table the name of the table to operate on (without prefix)
 	 * @param array $keys the keys for the update (field name => value)
 	 * @param boolen $history create an entry in the _history table
-	 * @return integer the affected rows, -1 on error
+	 * @return int number of affected rows, -1 on error
+	 * @since 1.0.0-rc.1
 	 */
 	private function entryUpdate(array $data, string $table, array $keys, bool $history = true) {
 		if (! isset($data['id'])) {
@@ -385,13 +628,16 @@ class OlmApi {
 	}
 
 	/**
-	 * Delete a given entry from the database.
+	 * Delete entries with the given id from the database.
 	 *
-	 * For DELETE.
+	 * @uses OlmApi::entrySaveHistory()
+	 * @uses OlmApi::$prefix
+	 * @uses OlmApi::$connection
 	 * @param string $id the id
 	 * @param string $table the name of the table to operate on (without prefix)
-	 * @param boolen $history create an entry in the _history table
-	 * @return integer the affected rows, -1 on error
+	 * @param bool $history create an entry in the _history table
+	 * @return int number of affected rows, -1 on error
+	 * @since 1.0.0-rc.1
 	 */
 	private function entriesDelete(string $id, string $table, bool $history = true) {
 		$history && $this->entrySaveHistory((int)$id, $table, 'deleted');
@@ -404,15 +650,31 @@ class OlmApi {
 		return $affectedRows;
 	}
 
+	/**
+	 * Fetch all entries with the status "deleted" from the given _history table.
+	 *
+	 * Convenience function.
+	 * @uses OlmApi::fetchWithStatus()
+	 * @param string $id the id
+	 * @param string $table the name of the table to operate on (without prefix)
+	 * @return array 
+	 * @since 1.0.0-rc.1
+	 */
 	private function entriesFetchDeleted(string $table) {
-		if (!in_array($table, $this->versionedTables)) 
-			return array();
-
-		$entries = $this->connection->fetchAll('SELECT * FROM ' . $this->prefix . $table . '_history WHERE history_status = "deleted"');
-
-		return $entries ? : array();
+		return $this->fetchWithStatus('-1', 'deleted', $table);
 	}
 
+	/**
+	 * Delete entries with the given id from the _history table.
+	 *
+	 * Entries purged with this function cannot be resurrected.
+	 * @uses OlmApi::$prefix
+	 * @uses OlmApi::$connection
+	 * @param string $id the id
+	 * @param string $table the name of the table to operate on (without prefix)
+	 * @return int number of affected rows, -1 on error
+	 * @since 1.0.0-rc.1
+	 */
 	private function entryPurge(string $id, string $table){
 		$affectedRows = $this->connection->delete(
 			$this->prefix . $table .'_history',
@@ -422,15 +684,57 @@ class OlmApi {
 		return $affectedRows;
 	}
 
+	/**
+	 * Fetch entries with the given id and status from the database.
+	 *
+	 * @uses OlmApi::$versionedTables
+	 * @uses OlmApi::$prefix
+	 * @uses OlmApi::$connection
+	 * @param string $id the id, returns all entries with $status if $id === '-1'
+	 * @param string $status one of (created|updated|deleted|deletioncancelled)
+	 * @param string $table the name of the table to operate on (without prefix)
+	 * @return array 
+	 * @since 1.0.0-rc.1
+	 */
 	private function entryFetchWithStatus(string $id, string $status, string $table) {
+		if (!in_array($table, $this->versionedTables)) 
+			return array();
+
+		$vars[] = $status;
+		if ($id === '-1') {
+			$where = '';
+		} else {
+			$where = ' AND id = ?';
+			$vars[] = $id;
+		}
+
 		$entry = $this->connection->fetchAssoc(
-			'SELECT * FROM ' . $this->prefix . $table . '_history WHERE id = ? AND history_status = ?',
-			array($id, $status)
+			'SELECT * FROM ' . $this->prefix . $table . '_history WHERE history_status = ?' . $where,
+			$vars
 		);
 		return $entry ? : array();
 	}
 
-	private function entryUndelete(string $id, array $data = array(), string $table) {
+	/**
+	 * Resurrect deleted entries with the given id (and data).
+	 *
+	 * Inserts the given entry (the full entry has top be provided in $data) into both
+	 * the working table and the _history table.
+	 *
+	 * This will update the status of the entry in the _history table from "deleted" to
+	 * "deletioncancelled" to prevent OlmApi::entryFetchWithStatus() or OlmApi::entriesFetchDeleted()
+	 * from fetching this entry again.
+	 *
+	 * @uses OlmApi::$versionedTables
+	 * @uses OlmApi::$prefix
+	 * @uses OlmApi::$connection
+	 * @param string $id the id
+	 * @param array $data the complete entry
+	 * @param string $table the name of the table to operate on (without prefix)
+	 * @return array the resurrected entry
+	 * @since 1.0.0-rc.1
+	 */
+	private function entryUndelete(string $id, array $data, string $table) {
 		if (!in_array($table, $this->versionedTables)) 
 			return array();
 
@@ -465,6 +769,17 @@ class OlmApi {
 		return $data;
 	}
 
+	/**
+	 * Fetch an entry's history from the database.
+	 *
+	 * @uses OlmApi::$versionedTables
+	 * @uses OlmApi::$prefix
+	 * @uses OlmApi::$connection
+	 * @param string $id the id
+	 * @param string $table the name of the table to operate on (without prefix)
+	 * @return array 
+	 * @since 1.0.0-rc.1
+	 */
 	private function entryFetchHistory(string $id, string $table) {
 		if (!in_array($table, $this->versionedTables))
 			return array();
@@ -477,6 +792,18 @@ class OlmApi {
 		return $entries ? : array();
 	}
 
+	/**
+	 * Fetch entries with the given id and date from the database.
+	 *
+	 * @uses OlmApi::$versionedTables
+	 * @uses OlmApi::$prefix
+	 * @uses OlmApi::$connection
+	 * @param string $id the id, returns all entries with $status if $id === '-1'
+	 * @param string $date same format as MYSQL_TIMESTAMP
+	 * @param string $table the name of the table to operate on (without prefix)
+	 * @return array 
+	 * @since 1.0.0-rc.1
+	 */
 	private function entryFetchVersionByDate(string $id, string $date, string $table) {
 		if (!in_array($table, $this->versionedTables))
 			return array();
@@ -489,6 +816,19 @@ class OlmApi {
 		return $entry ? : array();
 	}
 
+	/**
+	 * Make sure that the types stored in the array (which will eventually become
+	 * a JSON-object) are correct.
+	 *
+	 * The information which field has which type can be found in OlmApi::$models.
+	 *
+	 * This function will take and return an array of entries.
+	 * @see OlmApi::$models
+	 * @param array $entries array of entries
+	 * @param string $table the name of the table from which the entries have been fetched (without prefix)
+	 * @return array 
+	 * @since 1.0.0-rc.1
+	 */
 	private function entriesPrepareForClient(array $entries, string $table) {
 		foreach ($entries as $i => $data) {
 			foreach ($data as $key => $item) {
@@ -506,11 +846,44 @@ class OlmApi {
 		return $entries;
 	}
 
+	/**
+	 * Get the name of the table from the name of the route.
+	 *
+	 * @see OlmApi::$routes
+	 * @param string $route the name of the route
+	 * @return string 
+	 * @since 1.0.0-rc.1
+	 */
 	private function getTableForRoute(string $route){
 		$array = explode('.', $route);
 		return $array[1];
 	}
 
+	/**
+	 * Check if an entry sent in by a client contains valid data.
+	 *
+	 * Uses OlmApi::$models[$table][FIELD]['pattern'] to determine if the given data is valid.
+	 *
+	 * If $forInsertion is true it checks if all fields specified in OlmApi::$models[$table]
+	 * with OlmApi::$models[$table][FIELD]['default'] === null are present. Missing fields with
+	 * OlmApi::$models[$table][FIELD]['default'] !== null will be set to the specified default
+	 * value.
+	 *
+	 * Removes all fields which are not present in OlmApi::$models[$table].
+	 *
+	 * If OlmApi::$models[$table][FIELD]['default'] === 'UNSET' then this fild will be unset.
+	 * @see OlmApi::$models
+	 * @uses OlmApi::sendError()
+	 * @uses OlmApi::RESPONSE_INVALID_REQUEST
+	 * @throws ApiException with OlmApi::RESPONSE_INVALID_REQUEST if a field does not match the pattern in OlmApi::$models[$table][FIELD]['pattern']
+	 * @throws ApiException with OlmApi::RESPONSE_INVALID_REQUEST if a field with OlmApi::$models[$table][FIELD]['default'] === null is missing
+	 * @throws ApiException with OlmApi::RESPONSE_INVALID_REQUEST if the item is not meant for insertion ($forInsertion === false) and $data['id'] is missing
+	 * @param array $data the data
+	 * @param string $table the name of the table for which the entry is meant
+	 * @param bool $forInsertion if true the entry must be complete
+	 * @return array 
+	 * @since 1.0.0-rc.1
+	 */
 	private function checkData(array $data, string $table, bool $forInsertion) {
 		foreach ($this->models[$table] as $key => $attributes) {
 			// check if the data point matches the pattern
@@ -525,7 +898,9 @@ class OlmApi {
 					$data[$key] = $attributes['default'];
 				}
 
-				if ($attributs['default'] !== 'UNSET' && !isset($data[$key])) {
+				if ($attributes['default'] === 'UNSET' && isset($data[$key])) {
+					unset($data[$key]);
+				} elseif ($attributes['default'] !== null && !isset($data[$key])) {
 					// the value is still missing so we stop and return an empty array
 					$this->sendError(self::RESPONSE_INVALID_REQUEST);
 				}
@@ -544,6 +919,20 @@ class OlmApi {
 		return $data;
 	}
 
+
+	/**
+	 * Check if the may access the item because he is either has the needed userrole or is admin.
+	 *
+	 * @uses OlmApi::$app
+	 * @uses OlmApi::$routes
+	 * @uses OlmApi::RESPONSE_INSUFFICIENT_PERMISSIONS
+	 * @uses OlmApi::getCurrentUser()
+	 * @uses OlmApi::sendError()
+	 * @throws ApiException with OlmApi::RESPONSE_INSUFFICIENT_PERMISSIONS if the user has neither ROLE_ADMIN nor the role specified in OlmApi::$routes[$route]['userrole']
+	 * @param string $route the name of the route as defined in OlmApi::$routes
+	 * @return bool 
+	 * @since 1.0.0-rc.1
+	 */
 	private function checkPermissionsRole(string $route) {
 		if (!$this->app['security.authorization_checker']->isGranted('ROLE_ADMIN')) {
 			// if the user is not admin
@@ -560,12 +949,41 @@ class OlmApi {
 		return true;
 	}
 
-	private function checkPermissionsOwner(string $route, array $entry, $table) {
+
+	/**
+	 * Check if the may access the item because he is either the owner or is admin.
+	 *
+	 * @uses OlmApi::$routes
+	 * @uses OlmApi::RESPONSE_INSUFFICIENT_PERMISSIONS
+	 * @uses OlmApi::enryIsOwn()
+	 * @uses OlmApi::getCurrentUserId()
+	 * @uses OlmApi::sendError()
+	 * @throws ApiException with OlmApi::RESPONSE_INSUFFICIENT_PERMISSIONS if OlmApi::$routes[$route]['owneronly'] is true and OlmApi::entryIsOwn() returns false
+	 * @param string $route the name of the route as defined in OlmApi::$routes
+	 * @param array $entry the entry
+	 * @param string $table the name of the table to operate on (without prefix)
+	 * @return bool 
+	 * @since 1.0.0-rc.1
+	 */
+	private function checkPermissionsOwner(string $route, array $entry, string $table) {
 		if ($this->routes[$route]['owneronly'] && !$this->entryIsOwn($entry, $table, $this->getCurrentUserId())) {
 			$this->sendError(self::RESPONSE_INSUFFICIENT_PERMISSIONS);
 		}
+		return true;
 	}
 
+
+	/**
+	 * Check if the fields in $params are of the types specified in $types.
+	 *
+	 * @uses OlmApi::RESPONSE_INVALID_REQUEST
+	 * @uses OlmApi::sendError()
+	 * @throws ApiException with OlmApi::RESPONSE_INVALID_REQUEST if the type of $params[FIELD] does not match what's specified in $types[FIELD]
+	 * @param array $params items to be checked
+	 * @param array $types types to check items against
+	 * @return bool 
+	 * @since 1.0.0-rc.1
+	 */
 	private function checkParams(array $params, array $types) {
 		$ok = true;
 		foreach ($params as $key => $param) {
@@ -577,7 +995,7 @@ class OlmApi {
 				$ok = is_numeric($param);
 				break;
 			case 'bool':
-				$ok = is_numeric($param) && ($param === "0" || $param === "1");
+				$ok = is_numeric($param) && (intval($param) === 0 || intval($param) === 1);
 				break;
 			default:
 				$ok = preg_match($types[$key], $param);
@@ -588,6 +1006,7 @@ class OlmApi {
 				$this->sendError(self::RESPONSE_INVALID_REQUEST);
 			}
 		}
+		return true;
 	}
 
 	public function controllerDefaultGet(\Symfony\Component\HttpFoundation\Request $request, string $id, string $version = 'current') {

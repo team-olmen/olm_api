@@ -1195,9 +1195,11 @@ class OlmApi {
 		}
 		$this->checkPermissionsRole($request->get("_route"));
 		$filter = array();
-		$filter[] = $name . '%';
+		//$filter[] = '%' . $name . '%';
+		$filter[] = '%' . $name . '%';
 
 		$entries = $this->connection->fetchAll(
+			//'SELECT * FROM ' . $this->prefix . 'users WHERE username LIKE ? OR email LIKE ?',
 			'SELECT * FROM ' . $this->prefix . 'users WHERE username LIKE ?',
 			$filter
 		);
@@ -1331,17 +1333,20 @@ class OlmApi {
 			unset($data['password']);
 		}
 
-		if (isset($data['username']) && $data['username'] !== $user->getUsername()) {
-			$entry = $this->entryFetch(array('username' => $data['username']), 'users');
-			if ($entry) {
-				$this->sendError(self::RESPONSE_USERNAME_EXISTS);
+		if (!$user->isAdmin()) {
+			// the admin may edit users
+			if (isset($data['username']) && $data['username'] !== $user->getUsername()) {
+				$entry = $this->entryFetch(array('username' => $data['username']), 'users');
+				if ($entry) {
+					$this->sendError(self::RESPONSE_USERNAME_EXISTS);
+				}
 			}
-		}
 
-		if (!$user->isAdmin() && isset($data['email']) && $data['email'] !== $user->getEmail()) {
-			$entry = $this->entryFetch(array('email' => $data['email']), 'users');
-			if ($entry) {
-				$this->sendError(self::RESPONSE_EMAIL_EXISTS);
+			if (isset($data['email']) && $data['email'] !== $user->getEmail()) {
+				$entry = $this->entryFetch(array('email' => $data['email']), 'users');
+				if ($entry) {
+					$this->sendError(self::RESPONSE_EMAIL_EXISTS);
+				}
 			}
 		}
 

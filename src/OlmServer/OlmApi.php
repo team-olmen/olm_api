@@ -125,6 +125,7 @@ class OlmApi {
 		'api.users.getinactive' => array('route' => '/api/users/inactive', 'function' => 'controllerUsersGetInactive', 'method' => 'get', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 		'api.users.get' => array('route' => '/api/users/{id}', 'function' => 'controllerUsersGet', 'method' => 'get', 'userrole' => 'ROLE_USER', 'owneronly' => true),
 		'api.users.getname' => array('route' => '/api/users/name/{name}', 'function' => 'controllerUsersGetName', 'method' => 'get', 'userrole' => 'ROLE_ADMIN', 'owneronly' => true),
+		'api.users.getsearch' => array('route' => '/api/users/search/{search}', 'function' => 'controllerUsersGetSearch', 'method' => 'get', 'userrole' => 'ROLE_ADMIN', 'owneronly' => true),
 		'api.users.getmulti' => array('route' => '/api/users', 'function' => 'controllerUsersGetMulti', 'method' => 'get', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 		'api.users.getmulti' => array('route' => '/api/users', 'function' => 'controllerUsersGetMulti', 'method' => 'get', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 		'api.users.post' => array('route' => '/api/users', 'function' => 'controllerUsersPost', 'method' => 'post', 'userrole' => 'ROLE_USER', 'owneronly' => true),
@@ -1189,17 +1190,34 @@ class OlmApi {
 		return $this->app->json($entry, 200);
 	}
 
+	public function controllerUsersGetSearch(\Symfony\Component\HttpFoundation\Request $request, string $search) {
+		if (strlen($search) <= 3) {
+			$this->sendError(self::RESPONSE_TERM_TOO_SHORT);
+		}
+		$this->checkPermissionsRole($request->get("_route"));
+		$filter = array();
+		$filter[] = '%' . strtolower($search) . '%';
+		$filter[] = '%' . strtolower($search) . '%';
+
+		$entries = $this->connection->fetchAll(
+			'SELECT * FROM ' . $this->prefix . 'users WHERE LOWER(username) LIKE ? OR LOWER(email) LIKE ?',
+			$filter
+		);
+
+		$entries = $this->usersPrepareForClient($entries);
+		$entries = $this->entriesPrepareForClient($entries, 'users');
+		return $this->app->json($entries, 200);
+	}
+
 	public function controllerUsersGetName(\Symfony\Component\HttpFoundation\Request $request, string $name) {
 		if (strlen($name) <= 3) {
 			$this->sendError(self::RESPONSE_TERM_TOO_SHORT);
 		}
 		$this->checkPermissionsRole($request->get("_route"));
 		$filter = array();
-		//$filter[] = '%' . $name . '%';
 		$filter[] = '%' . $name . '%';
 
 		$entries = $this->connection->fetchAll(
-			//'SELECT * FROM ' . $this->prefix . 'users WHERE username LIKE ? OR email LIKE ?',
 			'SELECT * FROM ' . $this->prefix . 'users WHERE username LIKE ?',
 			$filter
 		);

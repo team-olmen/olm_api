@@ -211,7 +211,7 @@ class OlmApi {
 		'sessions' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 			'user' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'string'),
-			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.]+$/', 'default' => null, 'type' => 'string'),
+			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.\/\?\']+$/', 'default' => null, 'type' => 'string'),
 			'questions' => array('pattern' => '/^([0-9]+;)+[0-9]+$/', 'default' => null, 'type' => 'array'),
 			'status' => array('pattern' => '/^([0-9]+;)+[0-9]+$/', 'default' => null, 'type' => 'array'),
 			'answers' => array('pattern' => '/^([0-9]+;)+[0-9]+$/', 'default' => null, 'type' => 'array'),	
@@ -222,17 +222,17 @@ class OlmApi {
 		),
 		'exams' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
-			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.]+$/', 'default' => null, 'type' => 'string'),
+			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.\/\?\']+$/', 'default' => null, 'type' => 'string'),
 		),
 		'protocolls' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 			'exam' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
-			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.]+$/', 'default' => null, 'type' => 'string'),
+			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.\/\?\']+$/', 'default' => null, 'type' => 'string'),
 			'text' => array('pattern' => '', 'default' => null, 'type' => 'string'),
 		),
 		'generations' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
-			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.]+$/', 'default' => null, 'type' => 'string'),
+			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.\/\?\']+$/', 'default' => null, 'type' => 'string'),
 		),
 		'texts' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
@@ -242,7 +242,7 @@ class OlmApi {
 		),
 		'docs' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
-			'title' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.]+$/', 'default' => null, 'type' => 'string'),
+			'title' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.\/\?\']+$/', 'default' => null, 'type' => 'string'),
 			'text' => array('pattern' => '', 'default' => '', 'type' => 'string'),
 		),
 	);

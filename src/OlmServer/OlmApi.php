@@ -113,6 +113,11 @@ class OlmApi {
 		'api.texts.post' => array('route' => '/api/texts', 'function' => 'controllerDefaultPost', 'method' => 'post', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 		'api.texts.patch' => array('route' => '/api/texts/{id}', 'function' => 'controllerDefaultPatch', 'method' => 'patch', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 		'api.texts.delete' => array('route' => '/api/texts/{id}', 'function' => 'controllerDefaultDelete', 'method' => 'delete', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
+		// docs
+		'api.docs.get' => array('route' => '/api/docs/{id}', 'function' => 'controllerDefaultGet', 'method' => 'get', 'userrole' => 'anonymous', 'owneronly' => false),
+		'api.docs.post' => array('route' => '/api/docs', 'function' => 'controllerDefaultPost', 'method' => 'post', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
+		'api.docs.patch' => array('route' => '/api/docs/{id}', 'function' => 'controllerDefaultPatch', 'method' => 'patch', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
+		'api.docs.delete' => array('route' => '/api/docs/{id}', 'function' => 'controllerDefaultDelete', 'method' => 'delete', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 		//
 		// custom controllers
 		//
@@ -150,6 +155,8 @@ class OlmApi {
 		// texts
 		'api.texts.getmulti' => array('route' => '/api/texts', 'function' => 'controllerTextsGetMulti', 'method' => 'get', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 		'api.texts.getbypath' => array('route' => '/api/texts/path/{path}', 'function' => 'controllerTextsGetByPath', 'method' => 'get', 'userrole' => 'anonymous', 'owneronly' => false),
+		// docs
+		'api.docs.getmulti' => array('route' => '/api/docs', 'function' => 'controllerDocsGetMulti', 'method' => 'get', 'userrole' => 'ROLE_ADMIN', 'owneronly' => false),
 	);
 
 	/**
@@ -232,7 +239,12 @@ class OlmApi {
 			'path' => array('pattern' => '/^[a-zA-Z\-_:\.]+$/', 'default' => null, 'type' => 'string'),
 			'help' => array('pattern' => '', 'default' => '', 'type' => 'string'),
 			'text' => array('pattern' => '', 'default' => '', 'type' => 'string'),
-		)
+		),
+		'docs' => array(
+			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
+			'title' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.]+$/', 'default' => null, 'type' => 'string'),
+			'text' => array('pattern' => '', 'default' => '', 'type' => 'string'),
+		),
 	);
 
 	/**
@@ -1790,6 +1802,21 @@ class OlmApi {
 		);
 
 		$entries = $this->entriesPrepareForClient($entries, 'generations');
+		return $this->app->json($entries, 200);
+	}
+
+	/*
+	 * Controllers for the docs table.
+	 */
+
+	public function controllerDocsGetMulti(\Symfony\Component\HttpFoundation\Request $request) {
+		$this->checkPermissionsRole($request->get("_route"));
+
+		$entries = $this->connection->fetchAll(
+			'SELECT * FROM ' . $this->prefix . 'docs'
+		);
+
+		$entries = $this->entriesPrepareForClient($entries, 'docs');
 		return $this->app->json($entries, 200);
 	}
 

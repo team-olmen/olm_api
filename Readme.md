@@ -73,3 +73,11 @@ To mark pre-releases you may add:
 * `-rc.[0-9]*` for release-candidates
 * `-beta.[0-9]*` for beta-releases
 * `-alpha.[0-9]*` for alpha-releases
+
+### Documenting
+
+```bash
+php phpdoc/phpdocumentor.phar -c phpdoc/phpdoc.xml
+```
+
+

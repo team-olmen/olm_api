@@ -1155,6 +1155,13 @@ class OlmApi {
 	 * Controllers for the users table.
 	 */
 
+	private function usersPrepareForClient(array $entries) {
+		foreach ($entries as $key => $entry) {
+			$entries[$key]['roles'] = explode(',', $entry['roles']);
+		}
+		return $entries;
+	}
+
 	public function controllerUsersGet(\Symfony\Component\HttpFoundation\Request $request, string $id) {
 		$route = $request->get('_route');
 		$table = 'users';
@@ -1165,6 +1172,7 @@ class OlmApi {
 
 		$this->checkPermissionsOwner($route, $entry, $table);
 
+		$entry = $this->usersPrepareForClient(array($entry))[0];
 		$entry = $this->entriesPrepareForClient(array($entry), $table)[0];
 		return $this->app->json($entry, 200);
 	}
@@ -1182,6 +1190,7 @@ class OlmApi {
 			$filter
 		);
 
+		$entries = $this->usersPrepareForClient($entries);
 		$entries = $this->entriesPrepareForClient($entries, 'users');
 		return $this->app->json($entries, 200);
 	}
@@ -1197,6 +1206,7 @@ class OlmApi {
 			$filter
 		);
 
+		$entries = $this->usersPrepareForClient($entries);
 		$entries = $this->entriesPrepareForClient($entries, 'users');
 		return $this->app->json($entries, 200);
 	}
@@ -1225,6 +1235,7 @@ class OlmApi {
 			'SELECT * FROM ' . $this->prefix . 'users'
 		);
 
+		$entries = $this->usersPrepareForClient($entries);
 		$entries = $this->entriesPrepareForClient($entries, 'users');
 		return $this->app->json($entries, 200);
 	}
@@ -1301,7 +1312,7 @@ class OlmApi {
 			}
 		}
 
-		if (isset($data['email']) && $data['email'] !== $user->getEmail()) {
+		if (!$user->isAdmin() && isset($data['email']) && $data['email'] !== $user->getEmail()) {
 			$entry = $this->entryFetch(array('email' => $data['email']), 'users');
 			if ($entry) {
 				$this->sendError(self::RESPONSE_EMAIL_EXISTS);
@@ -1314,6 +1325,9 @@ class OlmApi {
 				$data['roles'] = array('ROLE_USER');
 			}
 			$data['roles'] = implode(',', $data['roles']);
+			if (empty($data['roles'])) {
+				unset($data['roles']);
+			}
 		}
 
 		$data['enabled'] = 1;

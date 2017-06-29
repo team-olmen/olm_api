@@ -176,3 +176,102 @@ CREATE TABLE `olm_users` (
 INSERT INTO `olm_users` (`id`, `username`, `email`, `password`, `salt`, `enabled`, `account_non_expired`, `credentials_non_expired`, `account_non_locked`, `roles`) VALUES
 (1,	'root',	'root@charite.de',	'$2y$13$iYODQBn6rIBfFZ80qfBTIe6qOagqFTbC0vcnB42fahux/0JIEa1Oe',	'',	1,	1,	1,	1,	'ROLE_ADMIN,ROLE_USER'),
 (2,	'user',	'user@charite.de',	'$2y$13$iYODQBn6rIBfFZ80qfBTIe6qOagqFTbC0vcnB42fahux/0JIEa1Oe',	'',	1,	1,	1,	1,	'ROLE_USER');
+
+
+
+
+
+ALTER TABLE `olm_protocolls` ADD `order_num` INT NOT NULL AFTER `id`;
+ALTER TABLE `olm_protocolls_history` ADD `order_num` INT NOT NULL AFTER `id`;
+ALTER TABLE `olm_exams` ADD `order_num` INT NOT NULL AFTER `id`;
+ALTER TABLE `olm_exams_history` ADD `order_num` INT NOT NULL AFTER `id`;
+ALTER TABLE `olm_docs` ADD `order_num` INT NOT NULL AFTER `id` ;
+ALTER TABLE `olm_modules` ADD `order_num` INT NOT NULL AFTER `id`;
+ALTER TABLE `olm_modules_history` ADD `order_num` INT NOT NULL AFTER `id`;
+
+
+SET @row_number = 0;
+UPDATE `olm_protocolls` AS `t1`
+INNER JOIN
+(
+	SELECT 
+`id`,
+		(@row_number := @row_number + 1) AS `new_order`
+	FROM
+		`olm_protocolls`
+	ORDER BY `id`
+) as `t2`
+ON `t1`.`id` = `t2`.`id`
+SET `t1`.`order_num` = `t2`.`new_order`;
+
+ALTER TABLE `olm_protocolls_history` CHANGE `history_timestamp` `history_timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP; 
+UPDATE `olm_protocolls_history` AS `t1`
+INNER JOIN `olm_protocolls` as `t2`
+ON `t1`.`id` = `t2`.`id`
+SET `t1`.`order_num` = `t2`.`order_num`;
+ALTER TABLE `olm_protocolls_history` CHANGE `history_timestamp` `history_timestamp` TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+
+
+SET @row_number = 0;
+UPDATE `olm_exams` AS `t1`
+INNER JOIN
+(
+	SELECT 
+`id`,
+		(@row_number := @row_number + 1) AS `new_order`
+	FROM
+		`olm_exams`
+	ORDER BY `id`
+) as `t2`
+ON `t1`.`id` = `t2`.`id`
+SET
+	`t1`.`order_num` = `t2`.`new_order`;
+
+ALTER TABLE `olm_exams_history` CHANGE `history_timestamp` `history_timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+UPDATE `olm_exams_history` AS `t1`
+INNER JOIN `olm_exams` as `t2`
+ON `t1`.`id` = `t2`.`id`
+SET `t1`.`order_num` = `t2`.`order_num`;
+ALTER TABLE `olm_exams_history` CHANGE `history_timestamp` `history_timestamp` TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+
+
+SET @row_number = 0;
+UPDATE `olm_modules` AS `t1`
+INNER JOIN
+(
+	SELECT 
+`id`,
+		(@row_number := @row_number + 1) AS `new_order`
+	FROM
+		`olm_modules`
+	ORDER BY `id`
+) as `t2`
+ON `t1`.`id` = `t2`.`id`
+SET
+	`t1`.`order_num` = `t2`.`new_order`;
+
+ALTER TABLE `olm_modules_history` CHANGE `history_timestamp` `history_timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+UPDATE `olm_modules_history` AS `t1`
+INNER JOIN `olm_modules` as `t2`
+ON `t1`.`id` = `t2`.`id`
+SET `t1`.`order_num` = `t2`.`order_num`;
+ALTER TABLE `olm_modules_history` CHANGE `history_timestamp` `history_timestamp` TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+
+
+SET @row_number = 0;
+UPDATE `olm_docs` AS `t1`
+INNER JOIN
+(
+	SELECT 
+`id`,
+		(@row_number := @row_number + 1) AS `new_order`
+	FROM
+		`olm_docs`
+	ORDER BY `id`
+) as `t2`
+ON `t1`.`id` = `t2`.`id`
+SET
+	`t1`.`order_num` = `t2`.`new_order`;

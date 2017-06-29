@@ -208,6 +208,7 @@ class OlmApi {
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.]+$/', 'default' => null, 'type' => 'string'),
 			'code' => array('pattern' => '/^[A-Z][0-9]{1,9}$/', 'default' => null, 'type' => 'string'),
+			'order_num' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 		),
 		'sessions' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
@@ -224,12 +225,14 @@ class OlmApi {
 		'exams' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.\/\?\']+$/', 'default' => null, 'type' => 'string'),
+			'order_num' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 		),
 		'protocolls' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 			'exam' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 			'name' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.\/\?\']+$/', 'default' => null, 'type' => 'string'),
 			'text' => array('pattern' => '', 'default' => null, 'type' => 'string'),
+			'order_num' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 		),
 		'generations' => array(
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
@@ -245,6 +248,7 @@ class OlmApi {
 			'id' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 			'title' => array('pattern' => '/^[a-zA-Z0-9äöüßÄÖÜß _\-:,\.\/\?\']+$/', 'default' => null, 'type' => 'string'),
 			'text' => array('pattern' => '', 'default' => '', 'type' => 'string'),
+			'order_num' => array('pattern' => '/^[0-9]+$/', 'default' => null, 'type' => 'numeric'),
 		),
 	);
 
@@ -258,6 +262,18 @@ class OlmApi {
 		'exams',
 		'modules',
 		'protocolls'
+	);
+
+	/**
+	 * @var array $orderedTables tables that support ordering via an "order" column
+	 * @see OlmApi::entryUpdate()
+	 * @since 1.2.0
+	 */
+	private $orderedTables = array(
+		'exams',
+		'modules',
+		'protocolls',
+		'docs'
 	);
 
 	/**
@@ -585,9 +601,37 @@ class OlmApi {
 	}
 
 	/**
+	 * Remove gaps from the 'order_num'-column.
+	 *
+	 * @uses OlmApi::$orderedTables
+	 * @uses OlmApi::$prefix
+	 * @uses OlmApi::$connection
+	 * @param string $table the name of the table to operate on (without prefix)
+	 * @return void
+	 * @since 1.2.0
+	 */
+	private function entriesReorder(string $table) {
+		if (!in_array($table, $this->orderedTables)) {
+			return;
+		}
+		// remove gaps from order
+		$stmt = $this->connection->prepare('
+			SET @row_number = 0;
+			UPDATE `' . $this->prefix . $table . '` AS `t1`
+			INNER JOIN (
+				SELECT `id`, (@row_number := @row_number + 1) AS `new_order`
+				FROM `' . $this->prefix . $table . '`
+				ORDER BY `order_num`) as `t2`
+			ON `t1`.`id` = `t2`.`id`
+			SET	`t1`.`order_num` = `t2`.`new_order`;');
+		$stmt->execute();
+	}
+
+	/**
 	 * Insert a given entry into the database.
 	 *
 	 * @uses OlmApi::entrySaveHistory()
+	 * @uses OlmApi::$orderedTables
 	 * @uses OlmApi::$prefix
 	 * @uses OlmApi::$connection
 	 * @param array $data the data, needs to contain the id
@@ -602,6 +646,10 @@ class OlmApi {
 			$data
 		);
 
+		if (in_array($table, $this->orderedTables)) {
+			$this->entriesReorder();
+		}
+
 		if ($affectedRows > 0) {
 			$id = (int)$this->connection->lastInsertId();
 
@@ -615,7 +663,9 @@ class OlmApi {
 	/**
 	 * Update a given entry in the database.
 	 *
+	 * If an entry in an ordered table is updated the table gets re-ordered.
 	 * @uses OlmApi::entrySaveHistory()
+	 * @uses OlmApi::$orderedTables
 	 * @uses OlmApi::$connection
 	 * @uses OlmApi::$prefix
 	 * @param array $data the data, needs to contain the id
@@ -630,11 +680,28 @@ class OlmApi {
 			return -1;
 		}
 
+		if (in_array($table, $this->orderedTables)) {
+			if (isset($data['order_num'])) {
+				// prepare some space in the order
+				$stmt = $this->connection->prepare('
+					UPDATE `' . $this->prefix . $table . '`
+					SET	`order_num` = `order_num` + 1
+					WHERE `order_num` >= ?');
+				$stmt->bindValue(1, $data['order_num']);
+				$stmt->execute();
+			}
+		}
+
 		$affectedRows = $this->connection->update(
 			$this->prefix . $table,
 			$data,
 			$keys
 		);
+
+		if (in_array($table, $this->orderedTables)) {
+			$this->entriesReorder($table);
+			//$this->sendError(self::RESPONSE_STUPID_REQUEST);
+		}
 
 		$history && $this->entrySaveHistory($data['id'], $table, 'updated');
 		return $affectedRows;
@@ -1044,6 +1111,13 @@ class OlmApi {
 		$route = $request->get('_route');
 		$table = $this->getTableForRoute($route);
 		empty($data) && $data = json_decode($request->getContent(), true);
+		
+		if (in_array($table, $this->orderedTables)) {
+			// insert at last position
+			// 'order_num' will be rebuilt, @see OlmApi::entriesReorder()
+			$data['order_num'] = isset($data['order_num']) ? $data['order_num'] : 10000000000000;
+		}
+
 		$data = $this->checkData($data, $table, true);
 		//var_dump($data);
 		$this->checkPermissionsRole($request->get("_route"));
@@ -1663,7 +1737,7 @@ class OlmApi {
 		$this->checkPermissionsRole($request->get("_route"));
 
 		$entries = $this->connection->fetchAll(
-			'SELECT * FROM ' . $this->prefix . 'modules'
+			'SELECT * FROM ' . $this->prefix . 'modules ORDER BY `order_num`'
 		);
 
 		$entries = $this->entriesPrepareForClient($entries, 'modules');
@@ -1804,7 +1878,7 @@ class OlmApi {
 		$this->checkPermissionsRole($request->get("_route"));
 
 		$entries = $this->connection->fetchAll(
-			'SELECT * FROM ' . $this->prefix . 'exams'
+			'SELECT * FROM ' . $this->prefix . 'exams ORDER BY `order_num`'
 		);
 
 		$entries = $this->entriesPrepareForClient($entries, 'exams');
@@ -1819,7 +1893,7 @@ class OlmApi {
 		$this->checkPermissionsRole($request->get("_route"));
 
 		$entries = $this->connection->fetchAll(
-			'SELECT * FROM ' . $this->prefix . 'protocolls WHERE exam = ?',
+			'SELECT * FROM ' . $this->prefix . 'protocolls WHERE exam = ? ORDER BY `order_num`',
 			array($id)
 		);
 
@@ -1850,7 +1924,7 @@ class OlmApi {
 		$this->checkPermissionsRole($request->get("_route"));
 
 		$entries = $this->connection->fetchAll(
-			'SELECT * FROM ' . $this->prefix . 'docs'
+			'SELECT * FROM ' . $this->prefix . 'docs ORDER BY `order_num`'
 		);
 
 		$entries = $this->entriesPrepareForClient($entries, 'docs');

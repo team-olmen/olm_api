@@ -1349,11 +1349,11 @@ class OlmApi {
 	public function controllerUsersPost(\Symfony\Component\HttpFoundation\Request $request) {
 		$data = json_decode($request->getContent(), true);
 
-		if ($data['password'] !== $data['check']) {
+		if ($data['password'] !== $data['repeat']) {
 			$this->sendError(self::RESPONSE_PASSWORDS_DO_NOT_MATCH);
 		}
 
-		unset($data['check']);
+		unset($data['repeat']);
 
 		if (isset($data['password']) && !empty($data['password'])) {
 			$password = $data['password'];
@@ -1409,6 +1409,12 @@ class OlmApi {
 		$data = json_decode($request->getContent(), true);
 
 		$user = $this->getCurrentUser();
+
+		if ($data['password'] !== $data['repeat']) {
+			$this->sendError(self::RESPONSE_PASSWORDS_DO_NOT_MATCH);
+		}
+
+		unset($data['repeat']);
 
 		if (!isset($data['check'])) {
 			$this->sendError(self::RESPONSE_PASSWORD_MISSING);

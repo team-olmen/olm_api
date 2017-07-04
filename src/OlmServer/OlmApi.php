@@ -647,7 +647,7 @@ class OlmApi {
 		);
 
 		if (in_array($table, $this->orderedTables)) {
-			$this->entriesReorder();
+			$this->entriesReorder($table);
 		}
 
 		if ($affectedRows > 0) {

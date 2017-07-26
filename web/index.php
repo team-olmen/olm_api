@@ -36,7 +36,7 @@ $app->register(new Silex\Provider\DoctrineServiceProvider(), array(
 		'charset'   => 'utf8mb4',
 	),
 ));
-$prefix = 'olm_';
+$prefix = $cfg['db_prefix'];
 
 // if the app recieves a JSON request decode the content
 $app->before(function (Request $request) {

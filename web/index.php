@@ -49,7 +49,7 @@ $app->before(function (Request $request) {
 // allow cross origin requests
 $app->after(function (Request $request, Response $response) {
 	$response->headers->set('Access-Control-Allow-Origin', '*');
-	$response->headers->set('Access-Control-Allow-Headers', 'Authorization, X-Access-Token, Content-Type');
+	$response->headers->set('Access-Control-Allow-Headers', 'X-XSRF-TOKEN, Authorization, X-Access-Token, Content-Type');
 	$response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
 });
 
@@ -97,6 +97,11 @@ $app['security.firewalls'] = array(
 	'api-llp' => array(
 		'pattern' => '^(\/api\/mcqs\/modules\/[0-9]+|\/api\/modules[^\/]|\/api\/generations|\/api\/texts/)',
 		'methods' => array('GET'),
+		'jwt' => array(
+			'use_forward' => true,
+			'require_previous_session' => false,
+			'stateless' => true,
+		),
 		'anonymous' => true,
 	),
 	'secured' => array(
@@ -120,17 +125,7 @@ $app['olmapi'] = function() use ($app, $prefix) {
 
 foreach($app['olmapi']->getRoutes() as $name => $route) {
 	// add the routes defined by the server
-	if ($route['method'] === 'get') {
-		$app->get($route['route'], 'olmapi:' . $route['function'])->bind($name);
-	} else if ($route['method'] === 'post') {
-		$app->post($route['route'], 'olmapi:' . $route['function'])->bind($name);
-	} else if ($route['method'] === 'patch') {
-		$app->patch($route['route'], 'olmapi:' . $route['function'])->bind($name);
-	} else if ($route['method'] === 'delete') {
-		$app->delete($route['route'], 'olmapi:' . $route['function'])->bind($name);
-	} else {
-		$app->post($route['route'], 'olmapi:' . $route['function'])->bind($name);
-	}
+	$app->{$route['method'] ?? 'post'}($route['route'], 'olmapi:' . $route['function'])->bind($name);
 }
 
 $app->options("{anything}", function (Application $app) {

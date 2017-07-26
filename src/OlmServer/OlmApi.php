@@ -1510,24 +1510,24 @@ class OlmApi {
 		foreach (explode(',', $modules) as $module) {
 			if ((int) $module > 0) {
 				$queryString .= $queryString === '' ? ' (' : ' OR';
-				$queryString .= ' module = ?';
+				$queryString .= ' t1.module = ?';
 				$queryArray[] = $module;
 			}
 		}
 
 		$queryString .= $queryString === '' ? '' : ') AND';
 
-		(int) $rating === 0 && $queryString .= ' rating < 0 AND';
-		(int) $rating === 1 && $queryString .= ' rating > 0 AND';
-		(int) $rating === 2 && $queryString .= ' rating = 0 AND';
+		(int) $rating === 0 && $queryString .= ' t1.rating < 0 AND';
+		(int) $rating === 1 && $queryString .= ' t1.rating > 0 AND';
+		(int) $rating === 2 && $queryString .= ' t1.rating = 0 AND';
 
 		if ($generation !== 'all') {
-			$queryString .= ' generation = ? AND';
+			$queryString .= ' t1.generation = ? AND';
 			$queryArray[] = $generation;
 		}
 
-		(int) $original === 0 && $queryString .= ' original = 0 AND';
-		(int) $original === 1 && $queryString .= ' original = 1 AND';
+		(int) $original === 0 && $queryString .= ' t1.original = 0 AND';
+		(int) $original === 1 && $queryString .= ' t1.original = 1 AND';
 
 		if (substr($queryString, -3) === 'AND') {
 			$queryString = substr($queryString, 0, -4);
@@ -1546,7 +1546,7 @@ class OlmApi {
 			't1.complete as complete, ' .
 			't1.generation as generation, ' .
 			't1.discussion as discussion, ' .
-			'IFNULL(t2.rated, 2) as rated '.
+			't2.rated as rated '.
 			'FROM ' . $this->prefix . 'mcqs AS t1 ' .
 			'LEFT JOIN ' . $this->prefix . 'mcqs_rated AS t2 ON t1.id = t2.id AND t2.user = ? ' .
 			'WHERE' . $queryString .
@@ -1612,7 +1612,7 @@ class OlmApi {
 		if (empty($current)) {
 			// since one can't rate on creation the question has to exist
 			$this->sendError(ITEM_NOT_FOUND);
-		} else if (!in_array($rated, array(0, 1, 2))) {
+		} else if (!in_array($rated, array(-1, 0, 1))) {
 			$this->sendError(INVALID_REQUEST);
 		}
 
@@ -1620,17 +1620,12 @@ class OlmApi {
 		// see if the user has rated this question before
 		$oldRating = $this->mcqRatedByUser($id);
 
-		if ($oldRating === 2) {
+		if ($oldRating === null) {
 			// the user has not rated yet
-			$rating += ($rated === 1) ? (1) : (-1);
+			$rating += $rated;
 			$this->entryCreate(array('id' => $id, 'user' => $this->getCurrentUserId(), 'rated' => $rated), 'mcqs_rated', false);
 		} else {
-			// the user has rated before
-			if ($oldRating !== $rated) {
-				// if the old rating and the new rating were the same nothing would change
-				// if they were not the rating would change by two in the direction of the new rating
-				$rating += ($rated === 1) ? (2) : (-2);
-			}
+			$rating += $rated - $oldRating;
 			$this->entryUpdate(array('rated' => $rated, 'id' => $id), 'mcqs_rated', array('id' => $id, 'user' => $this->getCurrentUserId()), false);
 		}
 
@@ -1644,20 +1639,20 @@ class OlmApi {
 	 *
 	 * @param string $id
 	 * @param array $data
-	 * @return integer 0: rated negative, 1: rated positive, 2: not rated
+	 * @return integer -1: rated negative, 1: rated positive, 0: neutral, null: not rated
 	 */
 	private function mcqRatedByUser($id, $data = array()) {
 		if (!empty($data) && isset($data['rated'])) {
-			return $data['rated'];
+			return intval($data['rated']);
 		}
 
 		$rated = $this->entryFetch(
 			array('id' => $id, 'user' => $this->getCurrentUserId()),
 			'mcqs_rated');
 		if (!empty($rated)) {
-			return $rated['rated'];
+			return intval($rated['rated']);
 		} else {
-			return 2;
+			return null;
 		}
 	}
 
@@ -1707,7 +1702,7 @@ class OlmApi {
 
 			$entry = $this->entryFetchById($id, 'mcqs');
 			$entry['rated'] = $data['rated'];
-			$entry = $this->entriesPrepareForClient(array($entry), $table)[0];
+			$entry = $this->entriesPrepareForClient(array($entry), 'mcqs')[0];
 			return $this->app->json($entry, 200);
 		} elseif (count($data) == 2 && isset($data['discussion'])) {
 			$this->entryUpdate(array('discussion' => $data['discussion'], 'id' => $id), 'mcqs', array('id' => $id), false);

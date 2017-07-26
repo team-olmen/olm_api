@@ -2,7 +2,6 @@
 /vendor
 /build
 /composer.lock
-/src/config/cfg.php
 
 # vim files
 *.vim

@@ -1418,12 +1418,12 @@ class OlmApi {
 
 		if (!isset($data['check'])) {
 			$this->sendError(self::RESPONSE_PASSWORD_MISSING);
+		} else {
+			if (!$user->isAdmin() && !$this->app['users']->isPasswordValid($data['check'], $user->getPassword())) {
+				$this->sendError(self::RESPONSE_WRONG_PASSWORD);
+			}
+			unset($data['check']);
 		}
-
-		if (!$this->app['users']->isPasswordValid($data['check'], $user->getPassword())) {
-			$this->sendError(self::RESPONSE_WRONG_PASSWORD);
-		}
-		unset($data['check']);
 
 		if (isset($data['password']) && !empty($data['password'])) {
 			$data['password'] = $this->app['users']->encodePassword($data['password'], empty($data['salt']) ? null : $data['salt']);

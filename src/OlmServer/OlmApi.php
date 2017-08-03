@@ -1502,7 +1502,6 @@ class OlmApi {
 			list($question, $answers, $solution) = array_values($this->mcqStringParse($mcqs[$key]['raw']));
 			empty($question) && $this->sendError(self::RESPONSE_MCQ_NO_QUESTION);
 			empty($answers) && $this->sendError(self::RESPONSE_MCQ_NO_ANSWERS);
-			$solution == -1 && $this->sendError(self::RESPONSE_MCQ_NO_SOLUTION);
 		}
 		return $mcqs;
 	}
@@ -1720,6 +1719,7 @@ class OlmApi {
 			// on updating the question the ratings loose their validity
 			$this->entriesDelete($id, 'mcqs_rated', false);
 			$data = $this->mcqsPrepareForDb(array($data))[0];
+			$data['rating'] = 0;
 			return $this->controllerDefaultPatch($request, $id, $data);
 		}
 	}

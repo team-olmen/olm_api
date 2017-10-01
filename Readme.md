@@ -80,4 +80,8 @@ To mark pre-releases you may add:
 php phpdoc/phpdocumentor.phar -c phpdoc/phpdoc.xml
 ```
 
+### Deploying
 
+Simply push your changes to <https://github.com/team-olmen/olm_api>.
+Changes to branch `develop` will be deployed to *test environment* on <http://api-test.olmen.de>.
+Changes to branch `master` will be deployed to *production environment* on <http://api.olmen.de>.

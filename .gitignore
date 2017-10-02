@@ -2,6 +2,7 @@
 /vendor
 /build
 /composer.lock
+/web/.htaccess
 
 # vim files
 *.vim

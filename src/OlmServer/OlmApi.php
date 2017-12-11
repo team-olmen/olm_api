@@ -1818,6 +1818,7 @@ class OlmApi {
 		$session['answers'] = array();
 		$session['status'] = array();
 
+		shuffle($entries);
 		foreach ($entries as $key => $entry) {
 			$session['questions'][$key] = $entry['id'];
 			$session['answers'][$key] = '0';

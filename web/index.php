@@ -48,7 +48,7 @@ $app->before(function (Request $request) {
 
 // allow cross origin requests
 $app->after(function (Request $request, Response $response) {
-	$response->headers->set('Access-Control-Allow-Origin', 'http://olmen.de');
+	$response->headers->set('Access-Control-Allow-Origin', '*');
 	$response->headers->set('Access-Control-Allow-Headers', 'X-XSRF-TOKEN, Authorization, X-Access-Token, Content-Type');
 	$response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
 });

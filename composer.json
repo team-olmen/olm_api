@@ -3,7 +3,7 @@
 		"silex/silex": "~2.1",
 		"symfony/twig-bridge": "~2.1",
 		"symfony/security": "~2.8",
-		"doctrine/dbal": "~2.2",
+		"doctrine/dbal": "~2.13.9",
 		"cnam/security-jwt-service-provider":"2.*"
 	},
 	"autoload": {
